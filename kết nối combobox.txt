@@ -1,0 +1,91 @@
+#include <QComboBox>
+#include <opencv2/opencv.hpp>
+
+// Tạo một QComboBox với các màu sắc khác nhau
+QComboBox *comboBox = new QComboBox;
+comboBox->addItem("Black", QColor(Qt::black));
+comboBox->addItem("White", QColor(Qt::white));
+comboBox->addItem("Red", QColor(Qt::red));
+comboBox->addItem("Green", QColor(Qt::green));
+comboBox->addItem("Blue", QColor(Qt::blue));
+
+// Kết nối tín hiệu currentIndexChanged của QComboBox với một slot để xử lý việc thay đổi màu sắc
+connect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(handleColorChange(int)));
+
+//...
+
+void handleColorChange(int index) {
+    // Lấy màu sắc được chọn từ QComboBox
+    QColor color = comboBox->itemData(index, Qt::UserRole).value<QColor>();
+
+    // Chuyển đổi màu sắc từ QColor sang cv::Scalar
+    cv::Scalar lowerb(color.blue(), color.green(), color.red());
+    cv::Scalar upperb(color.blue(), color.green(), color.red());
+
+    // Sử dụng màu sắc này để phát hiện trong hình ảnh với OpenCV
+    cv::Mat img; // Giả sử đây là hình ảnh của bạn
+    cv::Mat hsv, mask;
+    cv::cvtColor(img, hsv, cv::COLOR_BGR2HSV);
+    cv::inRange(hsv, lowerb, upperb, mask);
+}
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QLabel>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+
+using namespace cv;
+
+int main(int argc, char** argv) {
+  QApplication a(argc, argv);
+
+  // Tạo một cửa sổ Qt
+  QWidget window;
+  window.resize(640, 480);
+
+  // Tạo một combobox để lựa chọn màu sắc
+  QComboBox* comboBox = new QComboBox();
+  comboBox->addItem("Đỏ");
+  comboBox->addItem("Xanh lá cây");
+  comboBox->addItem("Xanh dương");
+
+  // Tạo một label để hiển thị hình ảnh
+  QLabel* label = new QLabel();
+
+  // Tạo một biến để lưu trữ màu sắc được chọn
+  Scalar color;
+
+  // Kết nối sự kiện thay đổi của combobox với hàm xử lý
+  connect(comboBox, &QComboBox::currentTextChanged, [&] {
+    // Lấy màu sắc được chọn
+    switch (comboBox->currentText().toStdString()) {
+      case "Đỏ":
+        color = Scalar(0, 0, 255);
+        break;
+      case "Xanh lá cây":
+        color = Scalar(0, 255, 0);
+        break;
+      case "Xanh dương":
+        color = Scalar(255, 0, 0);
+        break;
+    }
+
+    // Hiển thị hình ảnh
+    Mat image = imread("image.jpg");
+    inRange(image, color - Scalar(50, 50, 50), color + Scalar(50, 50, 50), image);
+    label->setPixmap(QPixmap::fromImage(QImage(image)));
+  });
+
+  // Sắp xếp các widget
+  QVBoxLayout* layout = new QVBoxLayout();
+  layout->addWidget(comboBox);
+  layout->addWidget(label);
+  window.setLayout(layout);
+
+  // Hiển thị cửa sổ
+  window.show();
+
+  return a.exec();
+}
+
